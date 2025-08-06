@@ -37,7 +37,7 @@ export function JoinSchemeDialog({ scheme }: { scheme: Scheme }) {
                 Please contact us via phone, WhatsApp, or email to complete the joining process.
             </p>
             <div className="mt-4 space-y-2">
-                <p><strong>Phone/WhatsApp:</strong> +91 709774579</p>
+                <p><strong>Phone/WhatsApp:</strong> +91 7097774579</p>
                 <p><strong>Email:</strong> saikrishnajella06@gmail.com</p>
             </div>
         </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -30,18 +29,10 @@ export default function CustomerDashboardPage() {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
             if (user && user.phoneNumber) {
+                setLoading(true);
                 try {
                     const customersRef = collection(db, "customers");
-                    const internationalNumber = user.phoneNumber;
-                    const localNumber = user.phoneNumber.substring(3);
-
-                    // Query for the customer using either the international or local number format.
-                    const q = query(customersRef, 
-                        or(
-                            where("number", "==", internationalNumber),
-                            where("number", "==", localNumber)
-                        )
-                    );
+                    const q = query(customersRef, where("number", "==", user.phoneNumber.substring(3))); // Search by local number
                     
                     const querySnapshot = await getDocs(q);
 
@@ -54,24 +45,22 @@ export default function CustomerDashboardPage() {
                             name: customerData.name,
                             scheme: customerData.scheme,
                             liftStatus: customerData.liftStatus,
-                            monthly: customerData.scheme / 15, // Note: This might need adjustment if duration changes
-                            nextPayment: customerData.liftStatus === 'Running' ? '05-Sep-2024' : 'N/A', // Example logic
+                            monthly: customerData.scheme / (customerData.durationMonths || 15),
+                            nextPayment: '05-Sep-2024', // Example static date
                         });
                     } else {
-                        // This case is important: user is authenticated but not in our database.
                         toast({
-                            title: 'Account Not Found',
-                            description: "Your number is not registered. Please contact support or explore our schemes.",
+                            title: 'Account Not Registered',
+                            description: "Your phone number is verified, but you aren't registered for any schemes.",
                             variant: 'destructive',
                         });
-                        // Redirecting to schemes page allows them to join one.
                         await signOut(auth);
                         router.push('/schemes');
                     }
                 } catch (error) {
                      toast({
-                        title: 'Error',
-                        description: "An unexpected error occurred while fetching your data. Please try logging in again.",
+                        title: 'Error Fetching Data',
+                        description: "Could not retrieve your details. Please try again.",
                         variant: 'destructive',
                     });
                     await signOut(auth);
@@ -80,29 +69,14 @@ export default function CustomerDashboardPage() {
                     setLoading(false);
                 }
             } else if (!user) {
-                // No authenticated user, redirect to login unless we are still in the initial loading phase.
-                 if (!loading) {
-                    router.push('/login/customer');
-                }
+                // If the onAuthStateChanged callback fires with no user,
+                // it means they are logged out. Redirect them.
+                router.push('/login/customer');
             }
         });
         
-        // On initial component mount, if there's no user after a short delay, stop loading and redirect.
-        const timer = setTimeout(() => {
-            if (loading) {
-                const currentUser = auth.currentUser;
-                if(!currentUser){
-                    setLoading(false);
-                    router.push('/login/customer');
-                }
-            }
-        }, 2500);
-
-        return () => {
-            unsubscribe();
-            clearTimeout(timer);
-        };
-    }, [router, toast, loading]);
+        return () => unsubscribe();
+    }, [router, toast]);
 
 
     if (loading || !customer) {
@@ -155,7 +129,7 @@ export default function CustomerDashboardPage() {
             <CardContent>
                  <Badge
                     variant={customer.liftStatus === 'Lifted' ? 'default' : customer.liftStatus === 'Running' ? 'secondary' : 'destructive'}
-                    className={`capitalize text-lg ${customer.liftStatus === 'Lifted' ? 'bg-blue-100 text-blue-800' : customer.liftStatus === 'Running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                    className="capitalize text-lg"
                   >
                     {customer.liftStatus}
                   </Badge>
@@ -182,17 +156,17 @@ export default function CustomerDashboardPage() {
               <TableRow>
                 <TableCell>10-Jun-2024</TableCell>
                 <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
-                <TableCell className="text-right"><Badge className="bg-green-100 text-green-800">Paid</Badge></TableCell>
+                <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
                <TableRow>
                 <TableCell>10-May-2024</TableCell>
                 <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
-                <TableCell className="text-right"><Badge className="bg-green-100 text-green-800">Paid</Badge></TableCell>
+                <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
                <TableRow>
                 <TableCell>10-Apr-2024</TableCell>
                 <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
-                <TableCell className="text-right"><Badge className="bg-green-100 text-green-800">Paid</Badge></TableCell>
+                <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
             </TableBody>
           </Table>

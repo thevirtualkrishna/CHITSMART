@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -98,7 +97,7 @@ export default function CustomersPage() {
               <TableBody>
                 {customers.length > 0 ? (
                   customers.map((customer) => (
-                    <TableRow key={customer.number}>
+                    <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>{customer.number}</TableCell>
                       <TableCell>{customer.scheme.toLocaleString('en-IN')}-IN</TableCell>
@@ -106,7 +105,7 @@ export default function CustomersPage() {
                       <TableCell className="text-center">
                         <Badge
                           variant={customer.liftStatus === 'Lifted' ? 'default' : customer.liftStatus === 'Running' ? 'secondary' : 'destructive'}
-                          className={`capitalize ${customer.liftStatus === 'Lifted' ? 'bg-blue-100 text-blue-800' : customer.liftStatus === 'Running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                          className="capitalize"
                         >
                           {customer.liftStatus || 'Unknown'}
                         </Badge>

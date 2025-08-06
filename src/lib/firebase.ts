@@ -7,7 +7,7 @@ import { getFirestore } from "firebase/firestore";
 const firebaseConfig = {
   "projectId": "chitsmart",
   "appId": "1:451855370756:web:1544167a81bec650b04351",
-  "storageBucket": "chitsmart.firebasestorage.app",
+  "storageBucket": "chitsmart.appspot.com",
   "apiKey": "AIzaSyAnaQBZwbvfn5-J2epYq0AuamHAYuXe66g",
   "authDomain": "chitsmart.firebaseapp.com",
   "measurementId": "",

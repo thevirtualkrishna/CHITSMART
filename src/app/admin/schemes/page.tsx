@@ -1,57 +1,76 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Wallet, Calendar } from 'lucide-react';
-import Link from "next/link";
+'use client';
+
 import { Button } from "@/components/ui/button";
-import { JoinSchemeDialog } from "@/components/join-scheme-dialog";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Users, Wallet, Calendar } from 'lucide-react';
+import { EditSchemeDialog } from '@/components/edit-scheme-dialog';
+import { useEffect, useState } from "react";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-const schemes = [
-  {
-    amount: "50,000",
-    title: "Starter Plan",
-    monthly: "4,000",
-    duration: "15 Months",
-    members: 15,
-    badge: "Basic"
-  },
-  {
-    amount: "1,00,000",
-    title: "Standard Plan",
-    monthly: "8,000",
-    duration: "15 Months",
-    members: 15,
-    badge: "Popular"
-  },
-  {
-    amount: "2,00,000",
-    title: "Growth Plan",
-    monthly: "16,000",
-    duration: "15 Months",
-    members: 15,
-    badge: "Premium"
-  },
-   {
-    amount: "5,00,000",
-    title: "Wealth Plan",
-    monthly: "30,000",
-    duration: "20 Months",
-    members: 15,
-    badge: "Elite"
+interface Scheme {
+  id: string;
+  amount: string;
+  title: string;
+  monthly: string;
+  duration: string;
+  groups: number;
+  members: number;
+  badge?: string;
+}
+
+export default function SchemesPage() {
+  const [schemes, setSchemes] = useState<Scheme[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "schemes"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const schemesData: Scheme[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        schemesData.push({
+          id: doc.id,
+          amount: data.amount?.toLocaleString('en-IN') || '0',
+          title: data.title || 'Untitled Scheme',
+          monthly: (data.amount / (data.durationMonths || 15)).toLocaleString('en-IN', { maximumFractionDigits: 0 }) || '0',
+          duration: `${data.durationMonths || 15} Months`,
+          groups: data.groups || 0,
+          members: (data.groups || 0) * (data.membersPerGroup || 15),
+          badge: data.badge || undefined,
+        });
+      });
+      // Sort schemes by amount
+      schemesData.sort((a, b) => parseInt(a.amount.replace(/,/g, '')) - parseInt(b.amount.replace(/,/g, '')));
+      setSchemes(schemesData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching schemes:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-40">Loading schemes...</div>;
   }
-];
 
-export default function PublicSchemesPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold font-headline">Our Chit Fund Schemes</h1>
-        <p className="text-muted-foreground mt-2">
-          Welcome! We're glad you're here. Explore our transparent and rewarding schemes.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Active Schemes</h1>
+          <p className="text-muted-foreground">Manage your chit fund schemes and groups.</p>
+        </div>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Scheme
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {schemes.map((scheme) => (
-          <Card key={scheme.amount} className="flex flex-col hover:shadow-lg transition-shadow">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {schemes.length > 0 ? schemes.map((scheme) => (
+          <Card key={scheme.id} className="flex flex-col">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle className="text-3xl font-bold text-primary">{scheme.amount}-IN</CardTitle>
@@ -75,27 +94,23 @@ export default function PublicSchemesPage() {
                     <p className="text-muted-foreground">Duration</p>
                   </div>
                 </div>
-                 <div className="flex items-center gap-2 p-2 bg-muted rounded-md col-span-2">
+                <div className="flex items-center gap-2 p-2 bg-muted rounded-md col-span-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-semibold">{scheme.members} Members per Group</p>
-                    <p className="text-muted-foreground">Join a community of savers</p>
+                    <p className="font-semibold">{scheme.groups} Groups</p>
+                    <p className="text-muted-foreground">{scheme.members} Members ({scheme.members / (scheme.groups || 1)} per group)</p>
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-                <JoinSchemeDialog scheme={scheme} />
+              <EditSchemeDialog scheme={scheme} />
             </CardFooter>
           </Card>
-        ))}
+        )) : (
+          <p className="text-muted-foreground col-span-full">No schemes found in the database.</p>
+        )}
       </div>
-       <div className="text-center mt-4">
-          <p className="text-muted-foreground">Already a member?</p>
-          <Button variant="link" asChild>
-            <Link href="/login/customer">Login Here</Link>
-          </Button>
-        </div>
     </div>
   );
 }

@@ -32,7 +32,17 @@ export default function CustomerDashboardPage() {
                 setLoading(true);
                 try {
                     const customersRef = collection(db, "customers");
-                    const q = query(customersRef, where("number", "==", user.phoneNumber.substring(3))); // Search by local number
+                    
+                    const internationalNumber = user.phoneNumber; // e.g., +919876543210
+                    const localNumber = user.phoneNumber.substring(3); // e.g., 9876543210
+
+                    // Query for the customer using either the international or local number format.
+                    const q = query(customersRef, 
+                        or(
+                            where("number", "==", internationalNumber),
+                            where("number", "==", localNumber)
+                        )
+                    );
                     
                     const querySnapshot = await getDocs(q);
 

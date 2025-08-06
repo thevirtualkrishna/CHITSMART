@@ -31,26 +31,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user && isAdminRoute) {
         // If not logged in and trying to access an admin route, redirect to login
         router.push('/login/admin');
-      } else if (user && pathname.startsWith('/login')) {
-        // If logged in and on a login page, redirect to dashboard
-        router.push('/admin/dashboard');
       }
     });
 
     return () => unsubscribe();
   }, [router, pathname]);
 
+  // While loading, show a loading indicator to prevent rendering children prematurely
   if (loading) {
     return <div className="flex items-center justify-center h-screen"><p>Loading...</p></div>;
   }
   
+  // If we are on an admin route and the auth state has loaded but there's no user,
+  // return null to prevent rendering the children while the redirect is in progress.
   const isAdminRoute = pathname.startsWith('/admin');
   if (isAdminRoute && !user) {
-    return null; // Don't render children if we are redirecting
+    return null; 
   }
 
+  // If we're on a login page and the user is already logged in, redirect them.
+  if (user && isAdminRoute && (pathname === '/login/admin' || pathname === '/login/customer')) {
+     router.push('/admin/dashboard');
+     return null; // Don't render children during redirect
+  }
+
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading: false }}>
       {children}
     </AuthContext.Provider>
   );

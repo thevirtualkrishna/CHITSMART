@@ -1,7 +1,16 @@
 {
+  "hosting": {
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
+  },
   "firestore": {
-    "database": "in-customers",
-    "location": "asia-south1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
@@ -9,24 +18,12 @@
     {
       "source": "functions",
       "codebase": "default",
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
       ]
     }
-  ],
-  "apphosting": {
-    "backendId": "my-web-app",
-    "rootDir": "/",
-    "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "functions"
-    ]
-  },
-  "database": {
-    "rules": "database.rules.json"
-  }
+  ]
 }

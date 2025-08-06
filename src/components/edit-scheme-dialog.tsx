@@ -17,7 +17,7 @@ import { updateSchemeGroups } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 type Scheme = {
-  id: string; // Add id to the type
+  id: string; // The Firestore document ID
   amount: string;
   title: string;
   groups: number;
@@ -31,9 +31,6 @@ export function EditSchemeDialog({ scheme }: { scheme: Scheme }) {
 
   const handleSaveChanges = async () => {
     startTransition(async () => {
-      // The action expects the scheme amount, which is part of the title.
-      // We should use the ID for more reliable updates.
-      // Let's assume the action needs the document ID.
       const result = await updateSchemeGroups(scheme.id, groups);
       if (result?.error) {
         toast({

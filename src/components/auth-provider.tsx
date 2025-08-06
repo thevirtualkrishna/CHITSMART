@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   // If we're on a login page and the user is already logged in, redirect them.
-  if (user && isAdminRoute && (pathname === '/login/admin' || pathname === '/login/customer')) {
+  if (user && (pathname === '/login/admin')) {
      router.push('/admin/dashboard');
      return null; // Don't render children during redirect
   }

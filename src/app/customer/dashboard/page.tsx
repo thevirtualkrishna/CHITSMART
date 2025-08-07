@@ -12,12 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface CustomerData {
-  number: string;
+  id: string;
   name: string;
   scheme: number;
-  liftStatus: 'Lifted' | 'Running' | 'Defaulted';
+  schemeStatus: 'lifted' | 'not-lifted';
+  liftStatus: 'yes' | 'no';
   monthly: number;
-  nextPayment: string;
+  duration: string;
+  started: string;
+  disburseDate: string;
 }
 
 export default function CustomerDashboardPage() {
@@ -27,8 +30,6 @@ export default function CustomerDashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // The auth state listener remains to reactively fetch data for the logged-in user.
-        // The layout now handles the redirection if no user is logged in.
         const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
             if (user && user.phoneNumber) {
                 setLoading(true);
@@ -49,24 +50,28 @@ export default function CustomerDashboardPage() {
 
                     if (!querySnapshot.empty) {
                         const customerDoc = querySnapshot.docs[0];
-                        const customerData = customerDoc.data() as DocumentData;
+                        const data = customerDoc.data() as DocumentData;
                         
+                        const durationMonths = parseInt(data.duration, 10) || 1;
+
                         setCustomer({
-                            number: customerDoc.number,
-                            name: customerData.name,
-                            scheme: customerData.scheme,
-                            liftStatus: customerData.liftStatus,
-                            monthly: customerData.scheme / (customerData.durationMonths || 15),
-                            nextPayment: '05-Sep-2024', // This can be made dynamic later
+                            id: customerDoc.id,
+                            name: data.name,
+                            scheme: data.scheme,
+                            schemeStatus: data['scheme-status'] || 'not-lifted',
+                            liftStatus: data['lift-status'] || 'no',
+                            monthly: data.scheme / durationMonths,
+                            duration: `${data.duration} Months`,
+                            started: data.started,
+                            disburseDate: data.disburse,
                         });
                     } else {
-                        // This case is important: user is authenticated but not in our database.
                         toast({
                             title: 'Account Not Found',
                             description: "Your number is not registered for any schemes.",
                             variant: 'destructive',
                         });
-                        router.push('/schemes'); // Redirect to schemes so they can join
+                        router.push('/schemes');
                     }
                 } catch (error) {
                      toast({
@@ -79,7 +84,6 @@ export default function CustomerDashboardPage() {
                     setLoading(false);
                 }
             } else if (!user) {
-                // This case should ideally be handled by the layout, but as a fallback:
                 router.push('/login/customer');
             }
         });
@@ -90,6 +94,18 @@ export default function CustomerDashboardPage() {
 
     if (loading || !customer) {
         return <div className="flex items-center justify-center h-screen"><p>Loading your details...</p></div>;
+    }
+
+    const getStatusVariant = () => {
+        if (customer.schemeStatus === 'lifted') return 'default';
+        if (customer.schemeStatus === 'not-lifted') return 'secondary';
+        return 'destructive';
+    }
+
+    const getStatusText = () => {
+        if (customer.schemeStatus === 'lifted') return 'Lifted';
+        if (customer.schemeStatus === 'not-lifted') return 'Running';
+        return 'Unknown';
     }
 
   return (
@@ -107,7 +123,7 @@ export default function CustomerDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{customer.scheme.toLocaleString('en-IN')}-IN</div>
-              <p className="text-xs text-muted-foreground">Total Value</p>
+              <p className="text-xs text-muted-foreground">Started: {customer.started}</p>
             </CardContent>
         </Card>
         <Card>
@@ -116,18 +132,18 @@ export default function CustomerDashboardPage() {
               <User className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{customer.monthly.toLocaleString('en-IN')}-IN</div>
-              <p className="text-xs text-muted-foreground">Your contribution</p>
+              <div className="text-2xl font-bold">{customer.monthly.toLocaleString('en-IN', {maximumFractionDigits: 0})}-IN</div>
+              <p className="text-xs text-muted-foreground">Duration: {customer.duration}</p>
             </CardContent>
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Next Payment Due</CardTitle>
+              <CardTitle className="text-sm font-medium">Disbursement Date</CardTitle>
               <Calendar className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{customer.nextPayment}</div>
-              <p className="text-xs text-muted-foreground">Mark your calendar</p>
+              <div className="text-2xl font-bold">{customer.disburseDate}</div>
+              <p className="text-xs text-muted-foreground">Your fund access date</p>
             </CardContent>
         </Card>
         <Card>
@@ -137,10 +153,10 @@ export default function CustomerDashboardPage() {
             </CardHeader>
             <CardContent>
                  <Badge
-                    variant={customer.liftStatus === 'Lifted' ? 'default' : customer.liftStatus === 'Running' ? 'secondary' : 'destructive'}
+                    variant={getStatusVariant()}
                     className="capitalize text-lg"
                   >
-                    {customer.liftStatus}
+                    {getStatusText()}
                   </Badge>
             </CardContent>
         </Card>
@@ -164,17 +180,17 @@ export default function CustomerDashboardPage() {
               {/* This is still static, we can connect this to a sub-collection later */}
               <TableRow>
                 <TableCell>10-Jun-2024</TableCell>
-                <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
+                <TableCell>{customer.monthly.toLocaleString('en-IN', {maximumFractionDigits: 0})}-IN</TableCell>
                 <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
                <TableRow>
                 <TableCell>10-May-2024</TableCell>
-                <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
+                <TableCell>{customer.monthly.toLocaleString('en-IN', {maximumFractionDigits: 0})}-IN</TableCell>
                 <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
                <TableRow>
                 <TableCell>10-Apr-2024</TableCell>
-                <TableCell>{customer.monthly.toLocaleString('en-IN')}-IN</TableCell>
+                <TableCell>{customer.monthly.toLocaleString('en-IN', {maximumFractionDigits: 0})}-IN</TableCell>
                 <TableCell className="text-right"><Badge variant="secondary">Paid</Badge></TableCell>
               </TableRow>
             </TableBody>
@@ -185,3 +201,4 @@ export default function CustomerDashboardPage() {
     </div>
   );
 }
+

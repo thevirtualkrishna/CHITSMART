@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "npm": "next npm"
+    "npm": "next npm",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

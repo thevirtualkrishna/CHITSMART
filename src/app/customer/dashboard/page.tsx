@@ -24,13 +24,13 @@ export default function CustomerDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [customer, setCustomer] = useState<CustomerData | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // The auth state listener remains to reactively fetch data for the logged-in user.
         // The layout now handles the redirection if no user is logged in.
         const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-            if (user && user.phoneNumber) {
+            if (user && user.number) {
                 setLoading(true);
                 try {
                     const customersRef = collection(db, "customers");

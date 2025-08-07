@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface CustomerData {
-  id: string;
+  number: string;
   name: string;
   scheme: number;
   liftStatus: 'Lifted' | 'Running' | 'Defaulted';
@@ -30,7 +30,7 @@ export default function CustomerDashboardPage() {
         // The auth state listener remains to reactively fetch data for the logged-in user.
         // The layout now handles the redirection if no user is logged in.
         const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-            if (user && user.number) {
+            if (user && user.phoneNumber) {
                 setLoading(true);
                 try {
                     const customersRef = collection(db, "customers");
@@ -52,7 +52,7 @@ export default function CustomerDashboardPage() {
                         const customerData = customerDoc.data() as DocumentData;
                         
                         setCustomer({
-                            id: customerDoc.id,
+                            number: customerDoc.number,
                             name: customerData.name,
                             scheme: customerData.scheme,
                             liftStatus: customerData.liftStatus,

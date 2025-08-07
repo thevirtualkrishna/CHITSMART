@@ -3,24 +3,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Schemes can be read by anyone, but only modified by authenticated admins.
+    // Allow public read for schemes
     match /schemes/{schemeId} {
       allow read: if true;
+      allow write: if request.auth != null; // Admins are any authenticated user
+    }
+
+    // Customer collection rules
+    match /customers/{customerId} {
+      // Allow a user to read their own document if they are logged in.
+      // This rule is essential for the customer dashboard page to function after login.
+      allow get: if request.auth != null && request.auth.token.phone_number == resource.data.number;
+      
+      // Allow admins to perform any write operation.
       allow write: if request.auth != null;
     }
 
-    // A user can only read their own customer document.
-    // They cannot see other customers' data.
-    // They cannot update their own data from the client.
-    match /customers/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Admins can read all customer data
-      allow list, write: if request.auth != null; 
-    }
-
-    // A more specific rule for customers collection to allow admins to list all documents
-    // and logged-in users to query for their own document by phone number.
+    // This rule allows the initial query during the login process.
+    // It lets a user query the collection to find their own document.
     match /customers/{document=**} {
-        allow read, write: if request.auth != null;
+        allow list: if request.auth != null && request.query.limit <= 1 && 
+                       (request.query.where.size() == 1 || request.query.where.size() == 2) &&
+                       ('number' in request.query.where);
     }
   }
+}

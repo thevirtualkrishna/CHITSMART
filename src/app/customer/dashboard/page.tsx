@@ -9,7 +9,7 @@ import { User, Wallet, Calendar, ShieldCheck } from "lucide-react";
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, getDocs, DocumentData, or } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface CustomerData {
   id: string;
@@ -24,19 +24,20 @@ export default function CustomerDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [customer, setCustomer] = useState<CustomerData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        // The auth state listener remains to reactively fetch data for the logged-in user.
+        // The layout now handles the redirection if no user is logged in.
         const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
             if (user && user.phoneNumber) {
                 setLoading(true);
                 try {
                     const customersRef = collection(db, "customers");
                     
-                    const internationalNumber = user.phoneNumber; // e.g., +919876543210
-                    const localNumber = user.phoneNumber.substring(3); // e.g., 9876543210
+                    const internationalNumber = user.phoneNumber; 
+                    const localNumber = user.phoneNumber.substring(3); 
 
-                    // Query for the customer using either the international or local number format.
                     const q = query(customersRef, 
                         or(
                             where("number", "==", internationalNumber),
@@ -56,16 +57,16 @@ export default function CustomerDashboardPage() {
                             scheme: customerData.scheme,
                             liftStatus: customerData.liftStatus,
                             monthly: customerData.scheme / (customerData.durationMonths || 15),
-                            nextPayment: '05-Sep-2024', // Example static date
+                            nextPayment: '05-Sep-2024', // This can be made dynamic later
                         });
                     } else {
+                        // This case is important: user is authenticated but not in our database.
                         toast({
-                            title: 'Account Not Registered',
-                            description: "Your phone number is verified, but you aren't registered for any schemes.",
+                            title: 'Account Not Found',
+                            description: "Your number is not registered for any schemes.",
                             variant: 'destructive',
                         });
-                        await signOut(auth);
-                        router.push('/schemes');
+                        router.push('/schemes'); // Redirect to schemes so they can join
                     }
                 } catch (error) {
                      toast({
@@ -73,14 +74,12 @@ export default function CustomerDashboardPage() {
                         description: "Could not retrieve your details. Please try again.",
                         variant: 'destructive',
                     });
-                    await signOut(auth);
                     router.push('/login/customer');
                 } finally {
                     setLoading(false);
                 }
             } else if (!user) {
-                // If the onAuthStateChanged callback fires with no user,
-                // it means they are logged out. Redirect them.
+                // This case should ideally be handled by the layout, but as a fallback:
                 router.push('/login/customer');
             }
         });

@@ -40,11 +40,9 @@ export default function CustomerDashboardPage() {
                     const internationalNumber = user.phoneNumber;
                     const localNumber = user.phoneNumber.substring(3);
 
-                    const q = query(customersRef,
-                        or(
-                            where("phoneNumber", "==", user.phoneNumber internationalNumber), // Use phoneNumber as key
-                            where("phoneNumber", "==", user.phoneNumber localNumber)
-                        )
+                    const q = query(
+                        customersRef,
+                        where("phoneNumber", "in", [internationalNumber, localNumber])
                     );
 
                     const querySnapshot = await getDocs(q);

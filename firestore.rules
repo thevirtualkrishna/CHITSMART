@@ -1,28 +1,33 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Allow public read access to the schemes collection for everyone.
-    match /schemes/{schemeId} {
-      allow read: if true;
-      allow write: if request.auth != null; // Only admins should write, but for now allow any authenticated user.
+
+    // Function to check if user is an admin (Google login)
+    function isAdmin() {
+      // List of admin emails. Replace with your admin emails.
+      return request.auth.token.email == "contactkrishnaworks@gmail.com";
     }
 
-    // Allow users to read their own customer document after they have authenticated.
-    // They cannot read other customer's documents.
-    // This uses the phone number from their auth token to check against the document.
-    match /customers/{customerId} {
-       allow read, write: if request.auth != null && (
-            request.auth.token.phone_number == resource.data.number ||
-            request.auth.token.phone_number == '+91' + resource.data.number
-       );
+    // Customers collection: Only the customer with matching phoneNumber can read/write their own document
+    match /customers/{phoneNumber} {
+         // Customer can only read their own document
+      allow read: if request.auth != null
+        && request.auth.token.phoneNumber == phoneNumber;
+        // This ensures the logged-in user's phoneNumber matches the document ID
     }
-    
-    // Allow admins (any authenticated user for now) to list all customers.
+
     match /customers/{customerId} {
-        allow list: if request.auth != null;
+      // Only admin can read and write customer documents
+      allow read, write: if isAdmin();
+      // No access for non-admins (including customers)
     }
+
+    // Schemes collection: anyone (including non-authenticated users) can read
+    match /schemes/{schemeId} {
+      allow read: if true;          // Public read access
+      allow write: if isAdmin();    // Only admin can write
+    }
+
+    // Add other collections as needed
   }
 }
